@@ -1,35 +1,46 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { ConnectedUserEntity } from 'src/chat/model/connected-user/connected-user.entity';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { ConnectedUserI } from 'src/chat/model/connected-user/connected-user.interface';
 import { UserI } from 'src/user/model/user.interface';
-import { Repository } from 'typeorm';
 
 @Injectable()
 export class ConnectedUserService {
 
   constructor(
-    @InjectRepository(ConnectedUserEntity)
-    private readonly connectedUserRepository: Repository<ConnectedUserEntity>
+    private readonly prisma: PrismaService
   ) { }
 
   async create(connectedUser: ConnectedUserI): Promise<ConnectedUserI> {
-    return this.connectedUserRepository.save(connectedUser);
+    return this.prisma.connectedUser.create({
+      data: {
+        socketId: connectedUser.socketId,
+        user: {
+          connect: {
+            id: connectedUser.user.id
+          }
+        }
+      }
+    });
   }
 
   async findByUser(user: UserI): Promise<ConnectedUserI[]> {
-    return this.connectedUserRepository.find({ user });
+    return this.prisma.connectedUser.findMany({
+      where: {
+        userId: user.id
+      }
+    });
   }
 
   async deleteBySocketId(socketId: string) {
-    return this.connectedUserRepository.delete({ socketId });
+    return this.prisma.connectedUser.deleteMany({
+      where: {
+        socketId
+      }
+    });
   }
 
   async deleteAll() {
-    await this.connectedUserRepository
-      .createQueryBuilder()
-      .delete()
-      .execute();
+    await this.prisma.connectedUser.deleteMany({});
   }
 
 }

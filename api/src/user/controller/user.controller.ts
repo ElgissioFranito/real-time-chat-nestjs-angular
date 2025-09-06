@@ -1,5 +1,4 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { Pagination } from 'nestjs-typeorm-paginate';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { CreateUserDto } from '../model/dto/create-user.dto';
 import { LoginUserDto } from '../model/dto/login-user.dto';
 import { LoginResponseI } from '../model/login-response.interface';
@@ -22,9 +21,9 @@ export class UserController {
   }
 
   @Get()
-  async findAll(@Query('page') page: number = 1, @Query('limit') limit: number = 10): Promise<Pagination<UserI>> {
+  async findAll(@Query('page') page: number = 1, @Query('limit') limit: number = 10) {
     limit = limit > 100 ? 100 : limit;
-    return this.userService.findAll({ page, limit, route: 'http://localhost:3000/api/users' });
+    return this.userService.findAll({ page, limit });
   }
 
   @Get('/find-by-username')

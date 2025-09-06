@@ -1,70 +1,84 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { UserEntity } from 'src/user/model/user.entity';
-import { UserI } from 'src/user/model/user.interface';
-import { Like, Repository } from 'typeorm';
-import { IPaginationOptions, paginate, Pagination } from 'nestjs-typeorm-paginate';
+import { User } from '@prisma/client';
 import { AuthService } from 'src/auth/service/auth.service';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { UserI } from 'src/user/model/user.interface';
 
 @Injectable()
 export class UserService {
 
   constructor(
-    @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
+    private readonly prisma: PrismaService,
     private authService: AuthService
   ) { }
 
   async create(newUser: UserI): Promise<UserI> {
-    try {
-      const exists: boolean = await this.mailExists(newUser.email);
-      if (!exists) {
-        const passwordHash: string = await this.hashPassword(newUser.password);
-        newUser.password = passwordHash;
-        const user = await this.userRepository.save(this.userRepository.create(newUser));
-        return this.findOne(user.id);
-      } else {
-        throw new HttpException('Email is already in use', HttpStatus.CONFLICT);
-      }
-    } catch {
+    const exists: boolean = await this.mailExists(newUser.email);
+    if (exists) {
       throw new HttpException('Email is already in use', HttpStatus.CONFLICT);
     }
+    const passwordHash: string = await this.hashPassword(newUser.password);
+    newUser.password = passwordHash;
+    const user = await this.prisma.user.create({
+      data: newUser
+    });
+    return this.findOne(user.id);
   }
 
   async login(user: UserI): Promise<string> {
-    try {
-      const foundUser: UserI = await this.findByEmail(user.email.toLowerCase());
-      if (foundUser) {
-        const matches: boolean = await this.validatePassword(user.password, foundUser.password);
-        if (matches) {
-          const payload: UserI = await this.findOne(foundUser.id);
-          return this.authService.generateJwt(payload);
-        } else {
-          throw new HttpException('Login was not successfull, wrong credentials', HttpStatus.UNAUTHORIZED);
-        }
-      } else {
-        throw new HttpException('Login was not successfull, wrong credentials', HttpStatus.UNAUTHORIZED);
-      }
-    } catch {
+    const foundUser: User = await this.findByEmail(user.email.toLowerCase());
+    if (!foundUser) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
+    const matches: boolean = await this.validatePassword(user.password, foundUser.password);
+    if (!matches) {
+      throw new HttpException('Login was not successfull, wrong credentials', HttpStatus.UNAUTHORIZED);
+    }
+    const payload: UserI = await this.findOne(foundUser.id);
+    return this.authService.generateJwt(payload);
   }
 
-  async findAll(options: IPaginationOptions): Promise<Pagination<UserI>> {
-    return paginate<UserEntity>(this.userRepository, options);
+  async findAll(options: { page: number, limit: number }): Promise<{ items: UserI[], meta: { totalItems: number, itemCount: number, itemsPerPage: number, totalPages: number, currentPage: number } }> {
+    const { page, limit } = options;
+    const skip = (page - 1) * limit;
+    const [users, totalItems] = await this.prisma.$transaction([
+      this.prisma.user.findMany({
+        skip,
+        take: limit,
+      }),
+      this.prisma.user.count(),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return {
+      items: users,
+      meta: {
+        totalItems,
+        itemCount: users.length,
+        itemsPerPage: limit,
+        totalPages,
+        currentPage: page,
+      },
+    };
   }
 
   async findAllByUsername(username: string): Promise<UserI[]> {
-    return this.userRepository.find({
+    return this.prisma.user.findMany({
       where: {
-        username: Like(`%${username.toLowerCase()}%`)
+        username: {
+          contains: username.toLowerCase(),
+        }
       }
     })
   }
 
-  // also returns the password
-  private async findByEmail(email: string): Promise<UserI> {
-    return this.userRepository.findOne({ email }, { select: ['id', 'email', 'username', 'password'] });
+  private async findByEmail(email: string): Promise<User> {
+    return this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
   }
 
   private async hashPassword(password: string): Promise<string> {
@@ -76,20 +90,28 @@ export class UserService {
   }
 
   private async findOne(id: number): Promise<UserI> {
-    return this.userRepository.findOne({ id });
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
   }
 
   public getOne(id: number): Promise<UserI> {
-    return this.userRepository.findOneOrFail({ id });
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
   }
 
   private async mailExists(email: string): Promise<boolean> {
-    const user = await this.userRepository.findOne({ email });
-    if (user) {
-      return true;
-    } else {
-      return false;
-    }
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+    return !!user;
   }
 
 }

@@ -1,45 +1,100 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { IPaginationOptions, paginate, Pagination } from 'nestjs-typeorm-paginate';
-import { RoomEntity } from 'src/chat/model/room/room.entity';
+import { Injectable } from '@nestjs.common';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { RoomI } from 'src/chat/model/room/room.interface';
 import { UserI } from 'src/user/model/user.interface';
-import { Repository } from 'typeorm';
 
 @Injectable()
 export class RoomService {
 
 
   constructor(
-    @InjectRepository(RoomEntity)
-    private readonly roomRepository: Repository<RoomEntity>
+    private readonly prisma: PrismaService
   ) { }
 
   async createRoom(room: RoomI, creator: UserI): Promise<RoomI> {
-    const newRoom = await this.addCreatorToRoom(room, creator);
-    return this.roomRepository.save(newRoom);
-  }
-
-  async getRoom(roomId: number): Promise<RoomI> {
-    return this.roomRepository.findOne(roomId, {
-      relations: ['users']
+    return this.prisma.room.create({
+      data: {
+        name: room.name,
+        description: room.description,
+        users: {
+          connect: {
+            id: creator.id
+          }
+        }
+      }
     });
   }
 
-  async getRoomsForUser(userId: number, options: IPaginationOptions): Promise<Pagination<RoomI>> {
-    const query = this.roomRepository
-      .createQueryBuilder('room')
-      .leftJoin('room.users', 'users')
-      .where('users.id = :userId', { userId })
-      .leftJoinAndSelect('room.users', 'all_users')
-      .orderBy('room.updated_at', 'DESC');
+  async getRoom(roomId: number): Promise<RoomI> {
+    return this.prisma.room.findUnique({
+      where: {
+        id: roomId
+      },
+      include: {
+        users: true
+      }
+    });
+  }
 
-    return paginate(query, options);
+  async getRoomsForUser(userId: number, options: { page: number, limit: number }): Promise<{ items: RoomI[], meta: { totalItems: number, itemCount: number, itemsPerPage: number, totalPages: number, currentPage: number } }> {
+    const { page, limit } = options;
+    const skip = (page - 1) * limit;
+    const [rooms, totalItems] = await this.prisma.$transaction([
+      this.prisma.room.findMany({
+        where: {
+          users: {
+            some: {
+              id: userId
+            }
+          }
+        },
+        include: {
+          users: true
+        },
+        orderBy: {
+          updated_at: 'desc'
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.room.count({
+        where: {
+          users: {
+            some: {
+              id: userId
+            }
+          }
+        }
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return {
+      items: rooms,
+      meta: {
+        totalItems,
+        itemCount: rooms.length,
+        itemsPerPage: limit,
+        totalPages,
+        currentPage: page,
+      },
+    };
   }
 
   async addCreatorToRoom(room: RoomI, creator: UserI): Promise<RoomI> {
-    room.users.push(creator);
-    return room;
+    return this.prisma.room.update({
+      where: {
+        id: room.id
+      },
+      data: {
+        users: {
+          connect: {
+            id: creator.id
+          }
+        }
+      }
+    });
   }
 
 }
