@@ -12,18 +12,25 @@ export class UserService {
     private authService: AuthService
   ) { }
 
-  async create(newUser: UserI): Promise<UserI> {
-    const exists: boolean = await this.mailExists(newUser.email);
-    if (exists) {
-      throw new HttpException('Email is already in use', HttpStatus.CONFLICT);
-    }
-    const passwordHash: string = await this.hashPassword(newUser.password);
-    newUser.password = passwordHash;
-    const user = await this.prisma.user.create({
-      data: newUser
-    });
-    return this.findOne(user.id);
+async create(newUser: UserI): Promise<UserI> {
+  const exists = await this.mailExists(newUser.email);
+  if (exists) {
+    throw new HttpException('Email is already in use', HttpStatus.CONFLICT);
   }
+
+  const passwordHash = await this.hashPassword(newUser.password);
+
+  const user = await this.prisma.user.create({
+    data: {
+      username: newUser.username,
+      email: newUser.email,
+      password: passwordHash,
+    },
+  });
+
+  return this.findOne(user.id);
+}
+
 
   async login(user: UserI): Promise<string> {
     const foundUser: User = await this.findByEmail(user.email.toLowerCase());
