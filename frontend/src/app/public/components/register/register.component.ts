@@ -1,22 +1,36 @@
+
 import { Component } from '@angular/core';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ReactiveFormsModule, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { tap } from 'rxjs/operators';
 import { UserService } from '../../services/user-service/user.service';
 import { CustomValidators } from '../../_helpers/custom-validators';
+import { Router, RouterModule } from '@angular/router';
+import {MatCardModule} from '@angular/material/card';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatInputModule} from '@angular/material/input';
+import {MatButtonModule} from '@angular/material/button';
 
 @Component({
-  selector: 'app-register',
-  templateUrl: './register.component.html',
-  styleUrls: ['./register.component.scss']
+    selector: 'app-register',
+    templateUrl: './register.component.html',
+    styleUrls: ['./register.component.scss'],
+    standalone: true,
+    imports: [
+        RouterModule,
+        ReactiveFormsModule,
+        MatCardModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule
+    ]
 })
 export class RegisterComponent {
 
-  form: FormGroup = new FormGroup({
-    email: new FormControl(null, [Validators.required, Validators.email]),
-    username: new FormControl(null, [Validators.required]),
-    password: new FormControl(null, [Validators.required]),
-    passwordConfirm: new FormControl(null, [Validators.required])
+  form: UntypedFormGroup = new UntypedFormGroup({
+    email: new UntypedFormControl(null, [Validators.required, Validators.email]),
+    username: new UntypedFormControl(null, [Validators.required]),
+    password: new UntypedFormControl(null, [Validators.required]),
+    passwordConfirm: new UntypedFormControl(null, [Validators.required])
   },
     { validators: CustomValidators.passwordsMatching }
   );
@@ -35,20 +49,20 @@ export class RegisterComponent {
     }
   }
 
-  get email(): FormControl {
-    return this.form.get('email') as FormControl;
+  get email(): UntypedFormControl {
+    return this.form.get('email') as UntypedFormControl;
   }
 
-  get username(): FormControl {
-    return this.form.get('username') as FormControl;
+  get username(): UntypedFormControl {
+    return this.form.get('username') as UntypedFormControl;
   }
 
-  get password(): FormControl {
-    return this.form.get('password') as FormControl;
+  get password(): UntypedFormControl {
+    return this.form.get('password') as UntypedFormControl;
   }
 
-  get passwordConfirm(): FormControl {
-    return this.form.get('passwordConfirm') as FormControl;
+  get passwordConfirm(): UntypedFormControl {
+    return this.form.get('passwordConfirm') as UntypedFormControl;
   }
 
 }

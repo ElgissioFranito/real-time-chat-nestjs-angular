@@ -1,15 +1,29 @@
+import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
-import { FormControl, Validators } from '@angular/forms';
+import { ReactiveFormsModule, UntypedFormControl, Validators } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import { combineLatest, Observable } from 'rxjs';
 import { map, startWith, tap } from 'rxjs/operators';
 import { MessagePaginateI } from 'src/app/model/message.interface';
 import { RoomI } from 'src/app/model/room.interface';
 import { ChatService } from '../../services/chat-service/chat.service';
+import { ChatMessageComponent } from '../chat-message/chat-message.component';
 
 @Component({
   selector: 'app-chat-room',
   templateUrl: './chat-room.component.html',
-  styleUrls: ['./chat-room.component.scss']
+  styleUrls: ['./chat-room.component.scss'],
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    ChatMessageComponent
+  ]
 })
 export class ChatRoomComponent implements OnChanges, OnDestroy, AfterViewInit {
 
@@ -18,6 +32,8 @@ export class ChatRoomComponent implements OnChanges, OnDestroy, AfterViewInit {
 
   messagesPaginate$: Observable<MessagePaginateI> = combineLatest([this.chatService.getMessages(), this.chatService.getAddedMessage().pipe(startWith(null))]).pipe(
     map(([messagePaginate, message]) => {
+      console.log(messagePaginate, message);
+      
       if (message && message.room.id === this.chatRoom.id && !messagePaginate.items.some(m => m.id === message.id)) {
         messagePaginate.items.push(message);
       }
@@ -28,7 +44,7 @@ export class ChatRoomComponent implements OnChanges, OnDestroy, AfterViewInit {
     tap(() => this.scrollToBottom())
   )
 
-  chatMessage: FormControl = new FormControl(null, [Validators.required]);
+  chatMessage: UntypedFormControl = new UntypedFormControl(null, [Validators.required]);
 
   constructor(private chatService: ChatService) { }
 
@@ -43,6 +59,7 @@ export class ChatRoomComponent implements OnChanges, OnDestroy, AfterViewInit {
     if (this.messagesScroller) {
       this.scrollToBottom();
     }
+    this.messagesPaginate$.subscribe();
   }
 
   ngOnDestroy() {

@@ -17,9 +17,10 @@ export class RoomService {
         name: room.name,
         description: room.description,
         users: {
-          connect: {
-            id: creator.id
-          }
+        connect: [
+          { id: creator.id },
+          ...room.users.map(u => ({ id: u.id }))
+        ]
         }
       }
     });
