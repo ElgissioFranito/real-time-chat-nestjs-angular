@@ -12,6 +12,8 @@ export class MessageService {
   ) { }
 
   async create(message: MessageI): Promise<MessageI> {
+
+    // { text: this.chatMessage.value, room: this.chatRoom, user: socket.data.user }
     return this.prisma.message.create({
       data: {
         text: message.text,
@@ -25,6 +27,10 @@ export class MessageService {
             id: message.room.id
           }
         }
+      },
+      include: {
+        user: true,
+        room: true
       }
     });
   }

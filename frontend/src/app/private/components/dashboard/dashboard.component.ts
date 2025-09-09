@@ -29,7 +29,7 @@ import { ChatRoomComponent } from '../chat-room/chat-room.component';
         ChatRoomComponent
     ]
 })
-export class DashboardComponent implements AfterViewInit{
+export class DashboardComponent implements OnInit{
 
   rooms$: Observable<RoomPaginateI> = this.chatService.getMyRooms();
   selectedRoom = null;
@@ -37,13 +37,13 @@ export class DashboardComponent implements AfterViewInit{
 
   constructor(private chatService: ChatService, private authService: AuthService) { }
 
-  // ngOnInit() {
-  //   this.chatService.emitPaginateRooms(10, 0);
-  // }
-
-  ngAfterViewInit() {
+  ngOnInit() {
     this.chatService.emitPaginateRooms(10, 0);
   }
+
+  // ngAfterViewInit() {
+  //   this.chatService.emitPaginateRooms(10, 0);
+  // }
 
   onSelectRoom(event: MatSelectionListChange) {
     this.selectedRoom = event.source.selectedOptions.selected[0].value;

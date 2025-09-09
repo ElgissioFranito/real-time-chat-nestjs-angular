@@ -59,7 +59,6 @@ export class ChatRoomComponent implements OnChanges, OnDestroy, AfterViewInit {
     if (this.messagesScroller) {
       this.scrollToBottom();
     }
-    this.messagesPaginate$.subscribe();
   }
 
   ngOnDestroy() {

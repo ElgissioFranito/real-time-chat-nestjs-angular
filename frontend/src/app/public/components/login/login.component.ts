@@ -32,9 +32,7 @@ export class LoginComponent {
 
   constructor(private authService: AuthService, private router: Router) { }
 
-  login() {
-    console.log(this.form.value);
-    
+  login() {    
     if (this.form.valid) {
       this.authService.login({
         email: this.email.value,

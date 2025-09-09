@@ -46,6 +46,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         rooms.meta.currentPage = rooms.meta.currentPage - 1;
         // Save connection to DB
         await this.connectedUserService.create({ socketId: socket.id, user });
+        console.log('connected user', socket.id);
+
+
         // Only emit rooms to the specific connected client
         return this.server.to(socket.id).emit('rooms', rooms);
       }
@@ -57,6 +60,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
   async handleDisconnect(socket: Socket) {
     // remove connection from DB
     await this.connectedUserService.deleteBySocketId(socket.id);
+    console.log('disconnected user', socket.id);
+
     socket.disconnect();
   }
 
@@ -96,6 +101,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
     await this.joinedRoomService.create({ socketId: socket.id, user: socket.data.user, room });
     // Send last messages from Room to User
     await this.server.to(socket.id).emit('messages', messages);
+
+    console.log('joining rooms', room);
   }
 
   @SubscribeMessage('leaveRoom')
@@ -106,22 +113,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
 
   @SubscribeMessage('addMessage')
   async onAddMessage(socket: Socket, message: MessageI) {
-    const createdMessage: MessageI = await this.messageService.create({...message, user: socket.data.user});
+    const createdMessage: MessageI = await this.messageService.create({ ...message, user: socket.data.user });
+    
+    // console.log("createdMessage ",createdMessage);
+    // console.log("createdMessage.room ",createdMessage.room);
+    // console.log("createdMessage.room.id ",createdMessage.room.id);
     const room: RoomI = await this.roomService.getRoom(createdMessage.room.id);
     const joinedUsers: JoinedRoomI[] = await this.joinedRoomService.findByRoom(room);
 
-    // TODO : find all joined & connected Users of the room
-    const joinedUsersIds: UserI[] = joinedUsers.map(u => u.user);
-
-    const connectedUsers: ConnectedUserI[] = [];
-    for (const user of joinedUsersIds) {
-      const connections: ConnectedUserI[] = await this.connectedUserService.findByUser(user);
-      connectedUsers.push(...connections);
-    }
-
     // TODO: Send new Message to all joined Users of the room (currently online)
-    for(const user of joinedUsers) {
+    for (const user of joinedUsers) {
       this.server.to(user.socketId).emit('messageAdded', createdMessage);
+
+      console.log('adding message', createdMessage.text);
     }
   }
 
