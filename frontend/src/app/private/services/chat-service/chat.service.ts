@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { MessageI, MessagePaginateI } from 'src/app/model/message.interface';
 import { RoomI, RoomPaginateI } from 'src/app/model/room.interface';
 import { CustomSocket } from '../../sockets/custom-socket';
+import { tokenGetter } from 'src/app/helpers/tokenHelper';
 
 @Injectable({
   providedIn: 'root'
@@ -37,7 +38,6 @@ export class ChatService {
   }
 
   emitPaginateRooms(limit: number, page: number) {
-    console.log("get rooms : page : ", page, " limit : ", limit);
     this.socket.emit('paginateRooms', { limit, page });
   }
 
@@ -46,6 +46,18 @@ export class ChatService {
     this.snackbar.open(`Room ${room.name} created successfully`, 'Close', {
       duration: 2000, horizontalPosition: 'right', verticalPosition: 'top'
     });
+  }
+
+
+  connect() {
+    const token = tokenGetter();
+    if (token) {
+      this.socket.connectWithToken(token);
+    }
+  }
+
+  disconnect() {
+    this.socket.disconnect();
   }
 
 }

@@ -1,6 +1,8 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { forwardRef, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { AuthService } from 'src/auth/service/auth.service';
+import { ChatGateway } from 'src/chat/gateway/chat.gateway';
+import { ConnectedUserService } from 'src/chat/service/connected-user/connected-user.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UserI } from 'src/user/model/user.interface';
 
@@ -9,6 +11,8 @@ export class UserService {
   constructor(
     private readonly prisma: PrismaService,
     private authService: AuthService,
+    @Inject(forwardRef(() => ConnectedUserService)) private readonly connectedUserService: ConnectedUserService,
+    @Inject(forwardRef(() => ChatGateway)) private readonly chatGateway: ChatGateway
   ) {}
 
   async create(newUser: UserI): Promise<UserI> {
@@ -48,6 +52,17 @@ export class UserService {
     const payload: UserI = await this.findOne(foundUser.id);
     return this.authService.generateJwt(payload);
   }
+
+
+  async logout(user: UserI): Promise<void> {
+    const connections = await this.connectedUserService.findByUser(user);
+    const socketIds = connections.map(connection => connection.socketId);
+    this.chatGateway.disconnectUserSockets(socketIds);
+    for (const connection of connections) {
+      await this.connectedUserService.deleteBySocketId(connection.socketId);
+    }
+  }
+
 
   async findAll(options: { page: number; limit: number }): Promise<{
     items: UserI[];
@@ -136,4 +151,5 @@ export class UserService {
     });
     return !!user;
   }
+
 }

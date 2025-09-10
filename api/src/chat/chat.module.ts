@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AuthModule } from 'src/auth/auth.module';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { UserModule } from 'src/user/user.module';
@@ -9,7 +9,8 @@ import { MessageService } from './service/message/message.service';
 import { RoomService } from './service/room-service/room.service';
 
 @Module({
-  imports: [AuthModule, UserModule, PrismaModule],
-  providers: [ChatGateway, RoomService, ConnectedUserService, JoinedRoomService, MessageService]
+  imports: [AuthModule, forwardRef(() => UserModule), PrismaModule],
+  providers: [ChatGateway, RoomService, ConnectedUserService, JoinedRoomService, MessageService],
+  exports: [ChatGateway, ConnectedUserService]
 })
 export class ChatModule { }

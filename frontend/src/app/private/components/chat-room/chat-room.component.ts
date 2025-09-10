@@ -39,7 +39,6 @@ export class ChatRoomComponent implements OnChanges, OnDestroy, AfterViewInit {
     this.chatService.getAddedMessage().pipe(startWith(null))
   ]).pipe(
     map(([messagePaginate, message]) => {
-      console.log(messagePaginate, message);
 
       if (message && message.room.id === this.chatRoom.id && !messagePaginate.items.some(m => m.id === message.id)) {
         messagePaginate.items.push(message);

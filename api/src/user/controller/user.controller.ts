@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { CreateUserDto } from '../model/dto/create-user.dto';
 import { LoginUserDto } from '../model/dto/login-user.dto';
 import { LoginResponseI } from '../model/login-response.interface';
@@ -42,6 +43,11 @@ export class UserController {
       token_type: 'JWT',
       expires_in: 10000
     };
+  }
+
+  @Post('logout')
+  async logout(@Req() req): Promise<void> {
+    this.userService.logout(req.user);
   }
 
 }

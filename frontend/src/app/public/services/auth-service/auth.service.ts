@@ -23,6 +23,15 @@ export class AuthService {
     );
   }
 
+  logout() : Observable<any> {
+    const decodedToken = this.jwtService.decodeToken();
+    const dataToSend = {
+      user: decodedToken.user
+    };
+
+    return this.http.post('api/users/logout',dataToSend);
+  }
+
   getLoggedInUser() {
     const decodedToken = this.jwtService.decodeToken();
     return decodedToken.user;

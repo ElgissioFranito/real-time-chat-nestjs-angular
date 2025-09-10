@@ -23,7 +23,6 @@ import { JoinedRoomI } from '../model/joined-room/joined-room.interface';
 @WebSocketGateway({
   cors: {
     origin: [
-      'https://hoppscotch.io',
       'http://localhost:3000',
       'http://localhost:4200',
     ],
@@ -73,8 +72,6 @@ export class ChatGateway
         }
         console.log('connected user', socket.id);
 
-        console.log('rooms for user', rooms);
-
         // Only emit rooms to the specific connected client
         this.server.to(socket.id).emit('rooms', rooms);
         this.server.to(socket.id).emit('socketId', socket.id);
@@ -92,7 +89,7 @@ export class ChatGateway
     socket.disconnect();
   }
 
-  private disconnect(socket: Socket) {
+  disconnect(socket: Socket) {
     socket.emit('Error', new UnauthorizedException());
     socket.disconnect();
   }
@@ -128,8 +125,6 @@ export class ChatGateway
     // substract page -1 to match the angular material paginator
     rooms.meta.currentPage = rooms.meta.currentPage - 1;
 
-    console.log('onPaginateRoom : ', rooms);
-
     return this.server.to(socket.id).emit('rooms', rooms);
   }
 
@@ -148,8 +143,6 @@ export class ChatGateway
     });
     // Send last messages from Room to User
     await this.server.to(socket.id).emit('messages', messages);
-
-    console.log('joining rooms', room);
   }
 
   @SubscribeMessage('leaveRoom')
@@ -165,9 +158,6 @@ export class ChatGateway
       user: socket.data.user,
     });
 
-    // console.log("createdMessage ",createdMessage);
-    // console.log("createdMessage.room ",createdMessage.room);
-    // console.log("createdMessage.room.id ",createdMessage.room.id);
     const room: RoomI = await this.roomService.getRoom(createdMessage.room.id);
     const joinedUsers: JoinedRoomI[] =
       await this.joinedRoomService.findByRoom(room);
@@ -178,6 +168,15 @@ export class ChatGateway
 
       console.log('adding message', createdMessage.text);
     }
+  }
+
+  disconnectUserSockets(socketIds: string[]) {
+    socketIds.forEach(socketId => {
+      const socket = this.server.sockets.sockets.get(socketId);
+      if (socket) {
+        this.disconnect(socket);
+      }
+    });
   }
 
   private handleIncomingPageRequest(page: PageI) {

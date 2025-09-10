@@ -6,7 +6,7 @@
       <div class="mb-6">
         <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 mb-4">
           <h2 class="text-2xl font-bold text-purple-900">My Chatrooms</h2>
-          <small class="text-sm text-gray-500">Logged in as {{user.username}}</small>
+          <small class="text-sm text-gray-500 cursor-pointer hover:text-red-500" (click)="logout()">Logged in as {{user.username}}</small>
         </div>
         <button mat-raised-button color="primary" [routerLink]="['../create-room']"
           class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">

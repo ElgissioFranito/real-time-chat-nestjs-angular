@@ -39,9 +39,7 @@ export class CreateRoomComponent {
 
   constructor(private chatService: ChatService, private router: Router, private activatedRoute: ActivatedRoute) { }
 
-  create() {
-    console.log(this.form.getRawValue());
-    
+  create() {    
     if (this.form.valid) {
       this.chatService.createRoom(this.form.getRawValue());
       this.router.navigate(['../dashboard'], { relativeTo: this.activatedRoute });
