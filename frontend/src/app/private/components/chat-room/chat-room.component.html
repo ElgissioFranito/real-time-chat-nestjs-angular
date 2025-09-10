@@ -1,78 +1,103 @@
 @if (chatRoom) {
-  <div class="h-full flex flex-col bg-white rounded-lg shadow-sm border border-gray-200">
-    <!-- Header -->
-    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-        <h2 class="text-xl font-bold text-gray-800 truncate">{{chatRoom.name}}</h2>
-        <div class="flex items-center text-gray-500">
-          <mat-icon class="!w-5 !h-5 text-gray-400">event</mat-icon>
-          <p class="ml-2 text-sm">{{chatRoom.updated_at | date:'medium'}}</p>
-        </div>
-      </div>
-      
-      <div>
-        <h3 class="text-gray-600 text-sm mb-2">{{chatRoom.description || "No description provided"}}</h3>
-        <div class="flex flex-wrap items-center gap-1">
-          <span class="text-xs font-medium text-gray-500">Members:</span>
-          @for (user of chatRoom.users; track user; let last = $last) {
-            <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
-              {{user.username}}{{last ? '' : ','}}
-            </span>
-          }
-        </div>
+<div class="h-full flex flex-col bg-white rounded-lg shadow-sm border border-gray-200">
+  <!-- Header -->
+  <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+      <h2 class="text-xl font-bold text-gray-800 truncate">{{chatRoom.name}}</h2>
+      <div class="flex items-center text-gray-500">
+        <mat-icon class="!w-5 !h-5 text-gray-400">event</mat-icon>
+        <p class="ml-2 text-sm">{{chatRoom.updated_at | date:'medium'}}</p>
       </div>
     </div>
-    
-    <!-- Messages -->
-    <div #messages class="flex-grow p-4 overflow-y-auto bg-gray-50">
-      <div class="space-y-4">
-        @for (message of (messagesPaginate$ | async)?.items; track message) {
-          <app-chat-message [message]="message"></app-chat-message>
+
+    <div>
+      <h3 class="text-gray-600 text-sm mb-2">{{chatRoom.description || "No description provided"}}</h3>
+      <div class="flex flex-wrap items-center gap-1">
+        <span class="text-xs font-medium text-gray-500">Members:</span>
+        @for (user of chatRoom.users; track user; let last = $last) {
+        <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
+          {{user.username}}{{last ? '' : ','}}
+        </span>
         }
       </div>
-      
-      <!-- Empty state -->
-      @if ((messagesPaginate$ | async)?.items?.length === 0) {
-        <div class="h-full flex flex-col items-center justify-center text-center py-12">
-          <div class="bg-indigo-100 p-4 rounded-full mb-4">
-            <mat-icon class="!w-10 !h-10 text-indigo-600">chat</mat-icon>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div #messages class="flex-grow p-4 overflow-y-auto bg-gray-50">
+    <ng-container *ngIf="(messagesPaginate$ | async)?.items as messages">
+    <div class="space-y-4">
+
+      @for (message of messages; track message.id; let i = $index; let first = $first) {
+        <div
+         [class.pt-0]="i > 0 && message.user.id === messages[i-1]?.user?.id"
+         [class.pt-10]="i === 0 || message.user.id !== messages[i-1]?.user?.id">
+
+        <div
+          [ngClass]="{'justify-end': message.user.id === user.id, 'justify-start text-start': message.user.id !== user.id}"
+          class="flex w-full">
+
+          <div class="message-container max-w-xs lg:max-w-md rounded-2xl px-4 flex flex-col"
+            [ngClass]="{'items-end': message.user.id === user.id, 'items-start': message.user.id !== user.id}">
+            <!-- Message header with username -->
+            <div class="text-xs mb-1 flex items-center text-gray-500 name-text"
+              [ngClass]="{'justify-end': message.user.id === user.id, 'justify-start text-start': message.user.id !== user.id}">
+              @if (message.user.id === user.id) {
+              <span>You</span>
+              } @else {
+              <span>{{message.user.username}}</span>
+              }
+              <span>•</span>
+              <span class="text-xs">{{message.created_at | date:'shortTime'}}</span>
+            </div>
+
+            <!-- Message text -->
+            <p [ngClass]="{'text-white bg-indigo-600': message.user.id === user.id, 'text-gray-800 bg-gray-300': message.user.id !== user.id}"
+              class="text-sm break-words message-text">
+              {{message.text}}
+            </p>
           </div>
-          <h3 class="text-lg font-medium text-gray-900 mb-1">No messages yet</h3>
-          <p class="text-gray-500">Be the first to send a message in this chatroom</p>
+
         </div>
+      </div>
       }
     </div>
-    
-    <!-- Add Message -->
-    <div class="border-t border-gray-200 bg-white p-4 rounded-b-lg">
-      <form class="flex gap-2 items-center" (submit)="sendMessage(); $event.preventDefault()">
-        <mat-form-field appearance="outline" class="flex-grow">
-          <input 
-            matInput 
-            [formControl]="chatMessage" 
-            type="text" 
-            placeholder="Type your message here..."
-            class="py-2"
-          >
-        </mat-form-field>
-        <button 
-          mat-icon-button 
-          type="submit" 
-          [disabled]="!chatMessage.valid"
-          class="flex-shrink-0 bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-300 transition-colors duration-200 rounded-full h-12 w-12 flex items-center justify-center"
-          aria-label="Send message"
-        >
-          <mat-icon class="!w-6 !h-6">send</mat-icon>
-        </button>
-      </form>
+    </ng-container>
+
+    <!-- Empty state -->
+    @if ((messagesPaginate$ | async)?.items?.length === 0) {
+    <div class="h-full flex flex-col items-center justify-center text-center py-12">
+      <div class="bg-indigo-100 p-4 rounded-full mb-4">
+        <mat-icon class="!w-10 !h-10 text-indigo-600">chat</mat-icon>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mb-1">No messages yet</h3>
+      <p class="text-gray-500">Be the first to send a message in this chatroom</p>
     </div>
+    }
   </div>
+
+  <!-- Add Message -->
+  <div class="border-t border-gray-200 bg-white p-4 rounded-b-lg">
+    <form class="flex gap-2 items-center" (submit)="sendMessage(); $event.preventDefault()">
+      <mat-form-field appearance="outline" class="flex-grow">
+        <input matInput [formControl]="chatMessage" type="text" placeholder="Type your message here..." class="py-2">
+      </mat-form-field>
+      <button mat-icon-button type="submit" [disabled]="!chatMessage.valid"
+        class="flex-shrink-0 bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-300 transition-colors duration-200 rounded-full h-12 w-12 flex items-center justify-center"
+        aria-label="Send message">
+        <mat-icon class="!w-6 !h-6">send</mat-icon>
+      </button>
+    </form>
+  </div>
+</div>
 } @else {
-  <div class="h-full flex flex-col items-center justify-center bg-gray-50 rounded-lg border border-gray-200 p-8 text-center">
-    <div class="bg-gray-100 p-4 rounded-full mb-4">
-      <mat-icon class="!w-10 !h-10 text-gray-400">forum</mat-icon>
-    </div>
-    <h3 class="text-lg font-medium text-gray-900 mb-2">No Chatroom Selected</h3>
-    <p class="text-gray-500 max-w-md">Select a chatroom from the list to start messaging or create a new one to get started.</p>
+<div
+  class="h-full flex flex-col items-center justify-center bg-gray-50 rounded-lg border border-gray-200 p-8 text-center">
+  <div class="bg-gray-100 p-4 rounded-full mb-4">
+    <mat-icon class="!w-10 !h-10 text-gray-400">forum</mat-icon>
   </div>
+  <h3 class="text-lg font-medium text-gray-900 mb-2">No Chatroom Selected</h3>
+  <p class="text-gray-500 max-w-md">Select a chatroom from the list to start messaging or create a new one to get
+    started.</p>
+</div>
 }

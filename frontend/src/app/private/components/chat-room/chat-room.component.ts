@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, inject, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { ReactiveFormsModule, UntypedFormControl, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,7 +9,8 @@ import { map, startWith, tap } from 'rxjs/operators';
 import { MessagePaginateI } from 'src/app/model/message.interface';
 import { RoomI } from 'src/app/model/room.interface';
 import { ChatService } from '../../services/chat-service/chat.service';
-import { ChatMessageComponent } from '../chat-message/chat-message.component';
+import { UserI } from 'src/app/model/user.interface';
+import { AuthService } from 'src/app/public/services/auth-service/auth.service';
 
 @Component({
   selector: 'app-chat-room',
@@ -21,8 +22,7 @@ import { ChatMessageComponent } from '../chat-message/chat-message.component';
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatIconModule,
-    ChatMessageComponent
+    MatIconModule
   ]
 })
 export class ChatRoomComponent implements OnChanges, OnDestroy, AfterViewInit {
@@ -30,10 +30,17 @@ export class ChatRoomComponent implements OnChanges, OnDestroy, AfterViewInit {
   @Input() chatRoom: RoomI;
   @ViewChild('messages') private messagesScroller: ElementRef;
 
-  messagesPaginate$: Observable<MessagePaginateI> = combineLatest([this.chatService.getMessages(), this.chatService.getAddedMessage().pipe(startWith(null))]).pipe(
+  authService = inject(AuthService);
+
+  user: UserI = this.authService.getLoggedInUser();
+
+  messagesPaginate$: Observable<MessagePaginateI> = combineLatest([
+    this.chatService.getMessages(),
+    this.chatService.getAddedMessage().pipe(startWith(null))
+  ]).pipe(
     map(([messagePaginate, message]) => {
       console.log(messagePaginate, message);
-      
+
       if (message && message.room.id === this.chatRoom.id && !messagePaginate.items.some(m => m.id === message.id)) {
         messagePaginate.items.push(message);
       }
